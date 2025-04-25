@@ -18,7 +18,7 @@ namespace MonteCarloSimulation
             int startingMoney = 1000;
             int bet = 10;
             int lossIndex = -1;
-            Player player = new Player(startingMoney, bet, Strategy.Fibonacci); // vagy Martingale, Flat
+            Player player = new Player(startingMoney, bet, Strategy.Martingale); // vagy Martingale, Flat
 
             Roulette roulette = new Roulette();
 
@@ -54,6 +54,17 @@ namespace MonteCarloSimulation
             }
 
             File.WriteAllLines("results.csv", results.Select(r => $"{r.Round};{r.Bet};{r.Money};{(r.Win ? 1 : 0)}"));
+            int maxMoney = results.Max(r => r.Money);
+            int minMoney = results.Min(r => r.Money);
+            double averageMoney = results.Average(r => r.Money);
+            int totalWins = results.Count(r => r.Win);
+            int totalLosses = results.Count - totalWins;
+
+            Console.WriteLine($"Max pénz: {maxMoney}");
+            Console.WriteLine($"Min pénz: {minMoney}");
+            Console.WriteLine($"Átlag pénz: {averageMoney:F2}");
+            Console.WriteLine($"Győzelmek száma: {totalWins}");
+            Console.WriteLine($"Vereségek száma: {totalLosses}");
 
             Console.ReadKey();
 
