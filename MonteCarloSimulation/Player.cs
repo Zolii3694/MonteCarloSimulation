@@ -55,7 +55,9 @@ namespace MonteCarloSimulation
         {
             switch(strategy)
             {
-                // case Strategy.Martingale: ide jon a tied
+                case Strategy.Martingale:
+                    currentBet = bet;
+                    break;
 
                 case Strategy.Fibonacci:
                     if (fibonacciIndex > 1)
@@ -78,7 +80,9 @@ namespace MonteCarloSimulation
         {
             switch(strategy)
             {
-                // case Strategy.Martingale: ide jon a tied 
+                case Strategy.Martingale:
+                    currentBet *= 2;
+                    break;
 
                 case Strategy.Fibonacci:
                     fibonacciIndex++;
