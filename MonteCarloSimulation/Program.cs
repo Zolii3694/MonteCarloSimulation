@@ -12,62 +12,82 @@ namespace MonteCarloSimulation
     {
         static void Main(string[] args)
         {
-            List<GameResult> results = new List<GameResult>();
 
+            int numberOfSimulations = 1000;
             int totalGames = 100000;
             int startingMoney = 1000;
             int bet = 10;
-            int lossIndex = -1;
-            Player player = new Player(startingMoney, bet, Strategy.Martingale); // vagy Martingale, Flat
+            Strategy strategy = Strategy.Flat; // választható: Flat, Martingale, Fibonacci
 
-            Roulette roulette = new Roulette();
+            List<SimulationSummary> summaries = new List<SimulationSummary>();
+            List<GameResult> allResults = new List<GameResult>();
 
-            for (int i = 0; i < totalGames; i++)
+            for (int sim = 0; sim < numberOfSimulations; sim++)
             {
-                int result = roulette.Spin();
-                bool win = roulette.Red(result);
+                List<GameResult> results = new List<GameResult>();
+                Player player = new Player(startingMoney, bet, strategy);
+                Roulette roulette = new Roulette();
+                int lossIndex = -1;
 
-                player.BetOnRed(roulette,result);
-
-                results.Add(new GameResult
+                for (int i = 0; i < totalGames; i++)
                 {
-                    Round = i + 1,
-                    Bet = player.CurrentBet,
-                    Money = player.Money,
-                    Win = win,
-                });
+                    int result = roulette.Spin();
+                    bool win = roulette.Red(result);
 
-                if(player.Money <= 0)
-                {
-                    lossIndex = i;
-                    break;
+                    player.BetOnRed(roulette, result);
+
+                    results.Add(new GameResult
+                    {
+                        Round = i + 1,
+                        Bet = player.CurrentBet,
+                        Money = player.Money,
+                        Win = win,
+                    });
+
+                    if (player.Money <= 0)
+                    {
+                        lossIndex = i;
+                        break;
+                    }
                 }
+                        summaries.Add(new SimulationSummary
+                    {
+                        FinalMoney = player.Money,
+                        LostAtRound = lossIndex,
+                        TotalWins = results.Count(r => r.Win),
+                        TotalLosses = results.Count(r => !r.Win),
+                    });
+
+                allResults.AddRange(results);
+                Console.WriteLine($"[{sim + 1}/{numberOfSimulations}] Final Money: {player.Money}");
+            
             }
+            // Átlagok számolása
+            double averageFinalMoney = summaries.Average(s => s.FinalMoney);
+            int bankruptcies = summaries.Count(s => s.FinalMoney <= 0);
+            double bankruptcyRate = (double)bankruptcies / numberOfSimulations * 100;
 
-            if (player.Money <= 0)
-            {
-                Console.WriteLine($"Jatekos penze elfogyott: {lossIndex}. korben");
-            }
-            else
-            {
-                Console.WriteLine($"Jatekos penze nem fogyott el: {player.Money} maradt");
-            }
+            Console.WriteLine();
+            Console.WriteLine("=== ÖSSZESÍTÉS ===");
+            Console.WriteLine($"Szimulációk száma: {numberOfSimulations}");
+            Console.WriteLine($"Átlagos záró pénz: {averageFinalMoney:F2}");
+            Console.WriteLine($"Csődök száma: {bankruptcies} ({bankruptcyRate:F2}%)");
 
-            File.WriteAllLines("results.csv", results.Select(r => $"{r.Round};{r.Bet};{r.Money};{(r.Win ? 1 : 0)}"));
-            int maxMoney = results.Max(r => r.Money);
-            int minMoney = results.Min(r => r.Money);
-            double averageMoney = results.Average(r => r.Money);
-            int totalWins = results.Count(r => r.Win);
-            int totalLosses = results.Count - totalWins;
+            File.WriteAllLines("results.csv", allResults.Select(r => $"{r.Round};{r.Bet};{r.Money};{(r.Win ? 1 : 0)}"));
+            File.WriteAllLines("summary.csv", summaries.Select(s => $"{s.FinalMoney};{s.LostAtRound};{s.TotalWins};{s.TotalLosses}"));
 
-            Console.WriteLine($"Max pénz: {maxMoney}");
-            Console.WriteLine($"Min pénz: {minMoney}");
-            Console.WriteLine($"Átlag pénz: {averageMoney:F2}");
-            Console.WriteLine($"Győzelmek száma: {totalWins}");
-            Console.WriteLine($"Vereségek száma: {totalLosses}");
+            int maxMoney = allResults.Max(r => r.Money);
+            int minMoney = allResults.Min(r => r.Money);
+            double averageMoney = allResults.Average(r => r.Money);
+            int totalWins = allResults.Count(r => r.Win);
+            int totalLosses = allResults.Count - totalWins;
 
+            File.WriteAllLines("summary.csv", summaries.Select(s =>
+                            $"{s.FinalMoney};{s.LostAtRound};{s.TotalWins};{s.TotalLosses}"
+                        ));
+
+            Console.WriteLine("CSV fájl elmentve: summary.csv");
             Console.ReadKey();
-
         }
     }
 }
